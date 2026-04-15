@@ -1,0 +1,33 @@
+{
+  "productName": "Task Widget",
+  "version": "0.1.0",
+  "identifier": "com.taskwidget",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:1420",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Task Widget",
+        "width": 380,
+        "height": 560,
+        "minWidth": 320,
+        "minHeight": 400,
+        "resizable": true,
+        "alwaysOnTop": true,
+        "decorations": true
+      }
+    ],
+    "security": {
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": []
+  }
+}
