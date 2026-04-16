@@ -36,6 +36,9 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Generate placeholder icons (skipped if real icons are committed)
+        run: node scripts/create-icons.mjs
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
