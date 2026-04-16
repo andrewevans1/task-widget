@@ -1,4 +1,61 @@
-/* ── Layout ─────────────────────────────────────────────── */
+/* ── Theme tokens ───────────────────────────────────────────────────────────── */
+
+.app {
+  /* dark (default) */
+  --bg:            #0d0d14;
+  --surface:       #16161f;
+  --surface-input: #0d0d14;
+  --border:        #22222e;
+  --border-btn:    #2a2a3a;
+  --text:          #e4e4f0;
+  --text-dim:      #c8c8da;
+  --text-muted:    #55556a;
+  --text-faint:    #33334a;
+  --text-ghost:    #2e2e40;
+  --placeholder:   #3a3a50;
+  --scrollbar:     #22222e;
+  --kbd-bg:        #1a1a26;
+  --kbd-border:    #2a2a38;
+  --kbd-text:      #3a3a52;
+  --stack:         #ff7b7b;
+  --stack-bg:      rgba(255, 100, 100, 0.12);
+  --stack-border:  rgba(255, 100, 100, 0.25);
+  --stack-accent:  rgba(255, 100, 100, 0.4);
+  --queue:         #4ecdc4;
+  --queue-bg:      rgba(72, 210, 200, 0.10);
+  --queue-border:  rgba(72, 210, 200, 0.22);
+  --queue-accent:  rgba(72, 210, 200, 0.30);
+  --done-hover-bg: rgba(67, 233, 123, 0.10);
+}
+
+.app.theme-light {
+  --bg:            #f2f2f7;
+  --surface:       #ffffff;
+  --surface-input: #f2f2f7;
+  --border:        #dcdce8;
+  --border-btn:    #ccccda;
+  --text:          #1a1a2e;
+  --text-dim:      #3a3a52;
+  --text-muted:    #8080a0;
+  --text-faint:    #aaaacc;
+  --text-ghost:    #c8c8dd;
+  --placeholder:   #aaaabb;
+  --scrollbar:     #dcdce8;
+  --kbd-bg:        #ebebf0;
+  --kbd-border:    #dcdce8;
+  --kbd-text:      #8080a0;
+  --stack:         #d44;
+  --stack-bg:      rgba(200, 60, 60, 0.07);
+  --stack-border:  rgba(200, 60, 60, 0.18);
+  --stack-accent:  rgba(200, 60, 60, 0.25);
+  --queue:         #1a9e96;
+  --queue-bg:      rgba(26, 158, 150, 0.07);
+  --queue-border:  rgba(26, 158, 150, 0.18);
+  --queue-accent:  rgba(26, 158, 150, 0.22);
+  --done-hover-bg: rgba(30, 180, 90, 0.08);
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────────── */
 
 .app {
   display: flex;
@@ -6,10 +63,11 @@
   height: 100vh;
   padding: 14px 14px 10px;
   gap: 10px;
-  background: #0d0d14;
+  background: var(--bg);
+  transition: background 0.2s, color 0.2s;
 }
 
-/* ── Header ─────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────────────────────────── */
 
 .header {
   display: flex;
@@ -23,64 +81,67 @@
   font-size: 15px;
   font-weight: 700;
   letter-spacing: -0.4px;
-  color: #e4e4f0;
+  color: var(--text);
   cursor: default;
 }
 
 .header-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .count {
   font-size: 11px;
-  color: #55556a;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
-.pin-btn {
+.icon-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-size: 14px;
   line-height: 1;
-  padding: 2px;
-  opacity: 0.45;
-  transition: opacity 0.15s;
+  padding: 2px 3px;
+  border-radius: 5px;
+  opacity: 0.5;
+  transition: opacity 0.15s, background 0.15s;
+  color: var(--text);
 }
 
-.pin-btn:hover { opacity: 0.8; }
-.pin-btn.pinned { opacity: 0.9; }
+.icon-btn:hover  { opacity: 0.85; background: var(--border); }
+.icon-btn.active { opacity: 0.95; }
 
-/* ── Input card ─────────────────────────────────────────── */
+/* ── Input card ──────────────────────────────────────────────────────────────── */
 
 .input-card {
-  background: #16161f;
-  border: 1px solid #22222e;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 10px;
   display: flex;
   flex-direction: column;
   gap: 8px;
   flex-shrink: 0;
+  transition: background 0.2s, border-color 0.2s;
 }
 
 .task-input {
-  background: #0d0d14;
-  border: 1px solid #22222e;
+  background: var(--surface-input);
+  border: 1px solid var(--border);
   border-radius: 8px;
-  color: #e4e4f0;
+  color: var(--text);
   font-family: inherit;
   font-size: 13px;
   padding: 9px 11px;
   outline: none;
   width: 100%;
-  transition: border-color 0.15s;
+  transition: border-color 0.15s, background 0.2s;
 }
 
-.task-input::placeholder { color: #3a3a50; }
-.task-input:focus { border-color: #3a3a58; }
+.task-input::placeholder { color: var(--placeholder); }
+.task-input:focus { border-color: var(--text-faint); }
 
 .btn-row {
   display: flex;
@@ -96,7 +157,7 @@
   font-size: 12px;
   font-weight: 600;
   padding: 8px 10px;
-  transition: opacity 0.15s, transform 0.1s;
+  transition: opacity 0.15s, transform 0.1s, background 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -104,29 +165,24 @@
 }
 
 .btn-arrow { font-size: 13px; }
-
 .btn:disabled { opacity: 0.3; cursor: default; }
 .btn:not(:disabled):active { transform: scale(0.96); }
 
 .btn-stack {
-  background: rgba(255, 100, 100, 0.12);
-  border: 1px solid rgba(255, 100, 100, 0.25);
-  color: #ff7b7b;
+  background: var(--stack-bg);
+  border: 1px solid var(--stack-border);
+  color: var(--stack);
 }
-.btn-stack:not(:disabled):hover {
-  background: rgba(255, 100, 100, 0.2);
-}
+.btn-stack:not(:disabled):hover { filter: brightness(1.1); }
 
 .btn-queue {
-  background: rgba(72, 210, 200, 0.1);
-  border: 1px solid rgba(72, 210, 200, 0.22);
-  color: #4ecdc4;
+  background: var(--queue-bg);
+  border: 1px solid var(--queue-border);
+  color: var(--queue);
 }
-.btn-queue:not(:disabled):hover {
-  background: rgba(72, 210, 200, 0.18);
-}
+.btn-queue:not(:disabled):hover { filter: brightness(1.1); }
 
-/* ── Task list ──────────────────────────────────────────── */
+/* ── Task list ───────────────────────────────────────────────────────────────── */
 
 .task-list {
   flex: 1;
@@ -135,14 +191,13 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
+  /* extra padding so the drop-line on the last item isn't clipped */
+  padding-bottom: 2px;
 }
 
 .task-list::-webkit-scrollbar { width: 3px; }
 .task-list::-webkit-scrollbar-track { background: transparent; }
-.task-list::-webkit-scrollbar-thumb {
-  background: #22222e;
-  border-radius: 3px;
-}
+.task-list::-webkit-scrollbar-thumb { background: var(--scrollbar); border-radius: 3px; }
 
 .empty-state {
   flex: 1;
@@ -151,50 +206,97 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  color: #2e2e3e;
+  color: var(--text-ghost);
   font-size: 13px;
 }
 
-.empty-icon {
-  font-size: 22px;
-  opacity: 0.5;
-}
+.empty-icon { font-size: 22px; opacity: 0.5; }
 
-/* ── Task row ───────────────────────────────────────────── */
+/* ── Task row ────────────────────────────────────────────────────────────────── */
 
 .task-row {
   position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #16161f;
-  border: 1px solid #22222e;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 9px;
   padding: 9px 10px;
-  overflow: hidden;
-  /* collapsing transition */
+  overflow: visible;   /* visible so drop-line pseudo-elements aren't clipped */
   max-height: 56px;
   opacity: 1;
   transition:
+    background 0.2s,
+    border-color 0.15s,
     max-height 0.28s ease,
     opacity 0.28s ease,
     padding 0.28s ease,
-    margin 0.28s ease,
-    border-width 0.28s ease;
+    margin 0.28s ease;
 }
 
-/* Stack rows get a subtle left accent */
-.task-row.type-stack {
-  border-left: 2px solid rgba(255, 100, 100, 0.4);
+/* Clip only the wash animation, not the row itself */
+.task-row::before,
+.task-row::after { box-sizing: border-box; }
+
+.task-row.type-stack { border-left: 2px solid var(--stack-accent); }
+.task-row.type-queue { border-left: 2px solid var(--queue-accent); }
+
+/* Being dragged */
+.task-row.dragging {
+  opacity: 0.4;
+  cursor: grabbing;
 }
-.task-row.type-queue {
-  border-left: 2px solid rgba(72, 210, 200, 0.3);
+
+/* Drop indicators */
+.task-row.drop-above::before {
+  content: '';
+  position: absolute;
+  top: -4px;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--queue);
+  border-radius: 1px;
+  box-shadow: 0 0 6px var(--queue);
 }
+
+.task-row.drop-below::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 6px;
+  right: 6px;
+  height: 2px;
+  background: var(--queue);
+  border-radius: 1px;
+  box-shadow: 0 0 6px var(--queue);
+}
+
+/* ── Drag handle ─────────────────────────────────────────────────────────────── */
+
+.drag-handle {
+  font-size: 13px;
+  color: var(--text-faint);
+  cursor: grab;
+  opacity: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s;
+  user-select: none;
+  position: relative;
+  z-index: 2;
+  line-height: 1;
+}
+
+.task-row:hover .drag-handle { opacity: 1; }
+.task-row.dragging .drag-handle { cursor: grabbing; }
+
+/* ── Row content ─────────────────────────────────────────────────────────────── */
 
 .task-num {
   font-size: 10px;
   font-weight: 700;
-  color: #33334a;
+  color: var(--text-faint);
   min-width: 14px;
   text-align: right;
   flex-shrink: 0;
@@ -211,20 +313,13 @@
   z-index: 2;
 }
 
-.dot-stack {
-  background: #ff7b7b;
-  box-shadow: 0 0 5px rgba(255, 100, 100, 0.6);
-}
-
-.dot-queue {
-  background: #4ecdc4;
-  box-shadow: 0 0 5px rgba(72, 210, 200, 0.4);
-}
+.dot-stack { background: var(--stack); box-shadow: 0 0 5px var(--stack-bg); }
+.dot-queue { background: var(--queue); box-shadow: 0 0 5px var(--queue-bg); }
 
 .task-text {
   flex: 1;
   font-size: 13px;
-  color: #c8c8da;
+  color: var(--text-dim);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -236,9 +331,9 @@
 .done-btn {
   flex-shrink: 0;
   background: none;
-  border: 1px solid #2a2a3a;
+  border: 1px solid var(--border-btn);
   border-radius: 6px;
-  color: #44445a;
+  color: var(--text-faint);
   cursor: pointer;
   font-size: 13px;
   height: 26px;
@@ -254,27 +349,27 @@
 .done-btn:not(:disabled):hover {
   border-color: #43e97b;
   color: #43e97b;
-  background: rgba(67, 233, 123, 0.1);
+  background: var(--done-hover-bg);
 }
 
 .done-btn:disabled { opacity: 0.4; cursor: default; }
 
-/* ── Wash overlay ───────────────────────────────────────── */
+/* ── Wash overlay ────────────────────────────────────────────────────────────── */
 
 .wash {
   position: absolute;
   inset: 0;
-  /* rich green→teal gradient that sweeps left→right */
   background: linear-gradient(
     90deg,
     rgba(67, 233, 123, 0.22) 0%,
     rgba(56, 249, 215, 0.18) 60%,
-    rgba(56, 249, 215, 0.08) 100%
+    rgba(56, 249, 215, 0.06) 100%
   );
   transform: scaleX(0);
   transform-origin: left center;
   border-radius: inherit;
   pointer-events: none;
+  overflow: hidden;
   z-index: 1;
 }
 
@@ -284,37 +379,31 @@
   100% { transform: scaleX(1); opacity: 0.5; }
 }
 
-/* Phase: washing ── sweep plays, text dims */
 .task-row.phase-washing .wash {
   animation: washSweep 0.58s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.task-row.phase-washing .task-text {
-  opacity: 0.35;
-  color: #43e97b;
-}
-
+.task-row.phase-washing .task-text { opacity: 0.35; color: #43e97b; }
 .task-row.phase-washing .dot-stack,
 .task-row.phase-washing .dot-queue {
   background: #43e97b;
   box-shadow: 0 0 6px rgba(67, 233, 123, 0.7);
 }
 
-/* Phase: collapsing ── row folds away */
 .task-row.phase-collapsing {
   max-height: 0 !important;
   opacity: 0;
   padding-top: 0;
   padding-bottom: 0;
-  margin-top: -5px; /* absorbs the gap */
+  margin-top: -5px;
   border-width: 0;
 }
 
-/* ── Footer hint ────────────────────────────────────────── */
+/* ── Footer ──────────────────────────────────────────────────────────────────── */
 
 .footer {
   font-size: 10px;
-  color: #2e2e40;
+  color: var(--text-ghost);
   text-align: center;
   flex-shrink: 0;
   padding-bottom: 2px;
@@ -323,9 +412,9 @@
 kbd {
   font-family: inherit;
   font-size: 9px;
-  background: #1a1a26;
-  border: 1px solid #2a2a38;
+  background: var(--kbd-bg);
+  border: 1px solid var(--kbd-border);
   border-radius: 3px;
   padding: 1px 4px;
-  color: #3a3a52;
+  color: var(--kbd-text);
 }

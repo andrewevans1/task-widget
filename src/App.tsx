@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import './App.css'
 
 interface Task {
@@ -9,6 +9,8 @@ interface Task {
 }
 
 type TaskPhase = 'idle' | 'washing' | 'collapsing'
+type Theme = 'dark' | 'light'
+type DragTarget = { id: string; half: 'top' | 'bottom' } | null
 
 function loadTasks(): Task[] {
   try {
@@ -19,79 +21,132 @@ function loadTasks(): Task[] {
   }
 }
 
+function loadTheme(): Theme {
+  return (localStorage.getItem('tw-theme') as Theme) ?? 'dark'
+}
+
 function App() {
   const [tasks, setTasks] = useState<Task[]>(loadTasks)
   const [input, setInput] = useState('')
   const [phases, setPhases] = useState<Record<string, TaskPhase>>({})
   const [pinned, setPinned] = useState(true)
+  const [theme, setTheme] = useState<Theme>(loadTheme)
+
+  // Drag state
+  const [draggedId, setDraggedId] = useState<string | null>(null)
+  const [dragTarget, setDragTarget] = useState<DragTarget>(null)
+
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Persist tasks
-  useEffect(() => {
-    localStorage.setItem('tw-tasks', JSON.stringify(tasks))
-  }, [tasks])
+  // Persist tasks + theme
+  useEffect(() => { localStorage.setItem('tw-tasks', JSON.stringify(tasks)) }, [tasks])
+  useEffect(() => { localStorage.setItem('tw-theme', theme) }, [theme])
 
   // Sync always-on-top with Tauri (no-op in browser)
   useEffect(() => {
     import('@tauri-apps/api/window')
       .then(({ getCurrentWindow }) => getCurrentWindow().setAlwaysOnTop(pinned))
-      .catch(() => {/* running in browser, fine */})
+      .catch(() => {})
   }, [pinned])
+
+  // ── Task actions ────────────────────────────────────────────────────────────
 
   const addTask = useCallback((type: 'stack' | 'queue') => {
     const text = input.trim()
     if (!text) return
-
-    const task: Task = {
-      id: crypto.randomUUID(),
-      text,
-      type,
-      createdAt: Date.now(),
-    }
-
+    const task: Task = { id: crypto.randomUUID(), text, type, createdAt: Date.now() }
     setTasks(prev => type === 'stack' ? [task, ...prev] : [...prev, task])
     setInput('')
     inputRef.current?.focus()
   }, [input])
 
   const completeTask = useCallback((id: string) => {
-    // Phase 1: wash sweeps across
     setPhases(p => ({ ...p, [id]: 'washing' }))
-
-    // Phase 2: collapse the row
-    setTimeout(() => {
-      setPhases(p => ({ ...p, [id]: 'collapsing' }))
-    }, 580)
-
-    // Phase 3: remove from state
+    setTimeout(() => setPhases(p => ({ ...p, [id]: 'collapsing' })), 580)
     setTimeout(() => {
       setTasks(prev => prev.filter(t => t.id !== id))
-      setPhases(p => {
-        const next = { ...p }
-        delete next[id]
-        return next
-      })
+      setPhases(p => { const n = { ...p }; delete n[id]; return n })
     }, 880)
   }, [])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault()
-      addTask('stack')
-    } else if (e.key === 'Enter') {
-      e.preventDefault()
-      addTask('queue')
+    if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); addTask('stack') }
+    else if (e.key === 'Enter') { e.preventDefault(); addTask('queue') }
+  }
+
+  // ── Drag handlers ───────────────────────────────────────────────────────────
+
+  const handleDragStart = (e: React.DragEvent, id: string) => {
+    setDraggedId(id)
+    e.dataTransfer.effectAllowed = 'move'
+    // Slight delay so the row opacity change renders before the drag image is captured
+    requestAnimationFrame(() => {
+      (e.target as HTMLElement).style.opacity = '0.4'
+    })
+  }
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    ;(e.target as HTMLElement).style.opacity = ''
+    setDraggedId(null)
+    setDragTarget(null)
+  }
+
+  const handleDragOver = (e: React.DragEvent, id: string) => {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (draggedId === id) { setDragTarget(null); return }
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const half = e.clientY < rect.top + rect.height / 2 ? 'top' : 'bottom'
+    setDragTarget(prev =>
+      prev?.id === id && prev?.half === half ? prev : { id, half }
+    )
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
+      setDragTarget(null)
     }
   }
 
+  const handleDrop = (e: React.DragEvent, targetId: string) => {
+    e.preventDefault()
+    if (!draggedId || draggedId === targetId) { setDragTarget(null); return }
+
+    setTasks(prev => {
+      const next = [...prev]
+      const srcIdx = next.findIndex(t => t.id === draggedId)
+      if (srcIdx === -1) return prev
+      const [moved] = next.splice(srcIdx, 1)
+      const tgtIdx = next.findIndex(t => t.id === targetId)
+      if (tgtIdx === -1) return prev
+      const insertAt = dragTarget?.half === 'bottom' ? tgtIdx + 1 : tgtIdx
+      next.splice(insertAt, 0, moved)
+      return next
+    })
+
+    setDraggedId(null)
+    setDragTarget(null)
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+
   return (
-    <div className="app">
+    <div className={`app theme-${theme}`}>
       <header className="header" data-tauri-drag-region>
         <span className="title" data-tauri-drag-region>Task Widget</span>
         <div className="header-right">
-          <span className="count">{tasks.length > 0 ? `${tasks.length} task${tasks.length !== 1 ? 's' : ''}` : 'clear!'}</span>
+          <span className="count">
+            {tasks.length > 0 ? `${tasks.length} task${tasks.length !== 1 ? 's' : ''}` : 'clear!'}
+          </span>
           <button
-            className={`pin-btn ${pinned ? 'pinned' : ''}`}
+            className="icon-btn"
+            onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? '☀︎' : '☽'}
+          </button>
+          <button
+            className={`icon-btn ${pinned ? 'active' : ''}`}
             onClick={() => setPinned(p => !p)}
             title={pinned ? 'Unpin window' : 'Pin on top'}
           >
@@ -140,14 +195,26 @@ function App() {
         ) : (
           tasks.map((task, i) => {
             const phase = phases[task.id] ?? 'idle'
+            const isDragging = draggedId === task.id
+            const dropClass =
+              dragTarget?.id === task.id
+                ? dragTarget.half === 'top' ? 'drop-above' : 'drop-below'
+                : ''
+
             return (
               <div
                 key={task.id}
-                className={`task-row phase-${phase} type-${task.type}`}
+                className={`task-row phase-${phase} type-${task.type} ${isDragging ? 'dragging' : ''} ${dropClass}`}
+                draggable={phase === 'idle'}
+                onDragStart={e => handleDragStart(e, task.id)}
+                onDragEnd={handleDragEnd}
+                onDragOver={e => handleDragOver(e, task.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={e => handleDrop(e, task.id)}
               >
-                {/* The wash overlay */}
                 <div className="wash" />
 
+                <span className="drag-handle" title="Drag to reorder">⠿</span>
                 <span className="task-num">{i + 1}</span>
                 <span className={`dot dot-${task.type}`} />
                 <span className="task-text">{task.text}</span>
@@ -167,7 +234,7 @@ function App() {
       </div>
 
       <footer className="footer">
-        <kbd>Enter</kbd> queue · <kbd>⇧ Enter</kbd> stack
+        <kbd>Enter</kbd> queue · <kbd>⇧ Enter</kbd> stack · drag to reorder
       </footer>
     </div>
   )
