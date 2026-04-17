@@ -77,16 +77,13 @@ function App() {
   // ── Drag handlers ───────────────────────────────────────────────────────────
 
   const handleDragStart = (e: React.DragEvent, id: string) => {
-    setDraggedId(id)
+    // setData is required — without it browsers won't recognise valid drop targets
+    e.dataTransfer.setData('text/plain', id)
     e.dataTransfer.effectAllowed = 'move'
-    // Slight delay so the row opacity change renders before the drag image is captured
-    requestAnimationFrame(() => {
-      (e.target as HTMLElement).style.opacity = '0.4'
-    })
+    setDraggedId(id)
   }
 
-  const handleDragEnd = (e: React.DragEvent) => {
-    ;(e.target as HTMLElement).style.opacity = ''
+  const handleDragEnd = () => {
     setDraggedId(null)
     setDragTarget(null)
   }
@@ -102,19 +99,14 @@ function App() {
     )
   }
 
-  const handleDragLeave = (e: React.DragEvent) => {
-    if (!(e.currentTarget as HTMLElement).contains(e.relatedTarget as Node)) {
-      setDragTarget(null)
-    }
-  }
-
   const handleDrop = (e: React.DragEvent, targetId: string) => {
     e.preventDefault()
-    if (!draggedId || draggedId === targetId) { setDragTarget(null); return }
+    const sourceId = e.dataTransfer.getData('text/plain')
+    if (!sourceId || sourceId === targetId) { setDragTarget(null); return }
 
     setTasks(prev => {
       const next = [...prev]
-      const srcIdx = next.findIndex(t => t.id === draggedId)
+      const srcIdx = next.findIndex(t => t.id === sourceId)
       if (srcIdx === -1) return prev
       const [moved] = next.splice(srcIdx, 1)
       const tgtIdx = next.findIndex(t => t.id === targetId)
@@ -186,7 +178,15 @@ function App() {
         </div>
       </div>
 
-      <div className="task-list">
+      <div
+        className="task-list"
+        onDragLeave={e => {
+          // Clear indicator only when cursor leaves the whole list, not just a child
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+            setDragTarget(null)
+          }
+        }}
+      >
         {tasks.length === 0 ? (
           <div className="empty-state">
             <span className="empty-icon">✦</span>
@@ -209,17 +209,17 @@ function App() {
                 onDragStart={e => handleDragStart(e, task.id)}
                 onDragEnd={handleDragEnd}
                 onDragOver={e => handleDragOver(e, task.id)}
-                onDragLeave={handleDragLeave}
                 onDrop={e => handleDrop(e, task.id)}
               >
                 <div className="wash" />
 
-                <span className="drag-handle" title="Drag to reorder">⠿</span>
                 <span className="task-num">{i + 1}</span>
                 <span className={`dot dot-${task.type}`} />
                 <span className="task-text">{task.text}</span>
                 <button
                   className="done-btn"
+                  draggable={false}
+                  onMouseDown={e => e.stopPropagation()}
                   onClick={() => completeTask(task.id)}
                   disabled={phase !== 'idle'}
                   title="Mark done"

@@ -226,6 +226,8 @@
   overflow: visible;   /* visible so drop-line pseudo-elements aren't clipped */
   max-height: 56px;
   opacity: 1;
+  cursor: grab;
+  user-select: none;
   transition:
     background 0.2s,
     border-color 0.15s,
@@ -245,8 +247,9 @@
 /* Being dragged */
 .task-row.dragging {
   opacity: 0.4;
-  cursor: grabbing;
 }
+
+.task-row:active { cursor: grabbing; }
 
 /* Drop indicators */
 .task-row.drop-above::before {
@@ -272,24 +275,6 @@
   border-radius: 1px;
   box-shadow: 0 0 6px var(--queue);
 }
-
-/* ── Drag handle ─────────────────────────────────────────────────────────────── */
-
-.drag-handle {
-  font-size: 13px;
-  color: var(--text-faint);
-  cursor: grab;
-  opacity: 0;
-  flex-shrink: 0;
-  transition: opacity 0.15s;
-  user-select: none;
-  position: relative;
-  z-index: 2;
-  line-height: 1;
-}
-
-.task-row:hover .drag-handle { opacity: 1; }
-.task-row.dragging .drag-handle { cursor: grabbing; }
 
 /* ── Row content ─────────────────────────────────────────────────────────────── */
 
@@ -345,6 +330,8 @@
   position: relative;
   z-index: 2;
 }
+
+.done-btn { cursor: pointer; }
 
 .done-btn:not(:disabled):hover {
   border-color: #43e97b;
