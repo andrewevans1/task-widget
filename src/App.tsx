@@ -11,6 +11,7 @@ interface Task {
 type TaskPhase = 'idle' | 'washing' | 'collapsing'
 type Theme = 'dark' | 'light'
 type DragTarget = { id: string; half: 'top' | 'bottom' } | null
+type ContextMenu = { taskId: string; x: number; y: number } | null
 
 function loadTasks(): Task[] {
   try {
@@ -36,11 +37,25 @@ function App() {
   const [draggedId, setDraggedId] = useState<string | null>(null)
   const [dragTarget, setDragTarget] = useState<DragTarget>(null)
 
+  // Context menu
+  const [contextMenu, setContextMenu] = useState<ContextMenu>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
+
   const inputRef = useRef<HTMLInputElement>(null)
 
   // Persist tasks + theme
   useEffect(() => { localStorage.setItem('tw-tasks', JSON.stringify(tasks)) }, [tasks])
   useEffect(() => { localStorage.setItem('tw-theme', theme) }, [theme])
+
+  // Close context menu on outside click
+  useEffect(() => {
+    if (!contextMenu) return
+    const close = (e: MouseEvent) => {
+      if (!menuRef.current?.contains(e.target as Node)) setContextMenu(null)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [contextMenu])
 
   // Sync always-on-top with Tauri (no-op in browser)
   useEffect(() => {
@@ -68,6 +83,29 @@ function App() {
       setPhases(p => { const n = { ...p }; delete n[id]; return n })
     }, 880)
   }, [])
+
+  const reorder = useCallback((id: string, action: 'up' | 'down' | 'top' | 'bottom') => {
+    setTasks(prev => {
+      const idx = prev.findIndex(t => t.id === id)
+      if (idx === -1) return prev
+      const next = [...prev]
+      const [item] = next.splice(idx, 1)
+      if (action === 'up')     next.splice(Math.max(0, idx - 1), 0, item)
+      if (action === 'down')   next.splice(Math.min(next.length, idx + 1), 0, item)
+      if (action === 'top')    next.unshift(item)
+      if (action === 'bottom') next.push(item)
+      return next
+    })
+    setContextMenu(null)
+  }, [])
+
+  const handleContextMenu = (e: React.MouseEvent, id: string) => {
+    e.preventDefault()
+    const menuW = 164, menuH = 136
+    const x = Math.min(e.clientX, window.innerWidth - menuW)
+    const y = Math.min(e.clientY, window.innerHeight - menuH)
+    setContextMenu({ taskId: id, x, y })
+  }
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && e.shiftKey) { e.preventDefault(); addTask('stack') }
@@ -210,6 +248,7 @@ function App() {
                 onDragEnd={handleDragEnd}
                 onDragOver={e => handleDragOver(e, task.id)}
                 onDrop={e => handleDrop(e, task.id)}
+                onContextMenu={e => handleContextMenu(e, task.id)}
               >
                 <div className="wash" />
 
@@ -232,6 +271,32 @@ function App() {
           })
         )}
       </div>
+
+      {contextMenu && (() => {
+        const idx = tasks.findIndex(t => t.id === contextMenu.taskId)
+        const isFirst = idx === 0
+        const isLast = idx === tasks.length - 1
+        return (
+          <div
+            ref={menuRef}
+            className="ctx-menu"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button className="ctx-item" onClick={() => reorder(contextMenu.taskId, 'top')} disabled={isFirst}>
+              ↑↑ Send to top
+            </button>
+            <button className="ctx-item" onClick={() => reorder(contextMenu.taskId, 'up')} disabled={isFirst}>
+              ↑ Move up
+            </button>
+            <button className="ctx-item" onClick={() => reorder(contextMenu.taskId, 'down')} disabled={isLast}>
+              ↓ Move down
+            </button>
+            <button className="ctx-item" onClick={() => reorder(contextMenu.taskId, 'bottom')} disabled={isLast}>
+              ↓↓ Send to bottom
+            </button>
+          </div>
+        )
+      })()}
 
       <footer className="footer">
         <kbd>Enter</kbd> queue · <kbd>⇧ Enter</kbd> stack · drag to reorder
